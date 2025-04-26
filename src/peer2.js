@@ -18,17 +18,27 @@ const run = async () => {
   const directory = `./data/orbitdb-${Date.now()}`
   const orbitdb2 = await createOrbitDB({ ipfs: ipfs2, id: 'peer2', directory })
 
-  // connect to voyager
-  const voyagerAddress = process.env.VOYAGER_ADDRESS
-  if (!voyagerAddress) {
-    log.error('Error: VOYAGER_ADDRESS environment variable not set.')
-  } else {
-    log('Dialing voyager multiaddr: %s', voyagerAddress)
-    ipfs2.libp2p.dial(multiaddr(voyagerAddress))
-  }
+  log('Opening OrbitDB...')
+  const db2 = await orbitdb2.open(peer1DbAddress).catch((e) => {
+    log.error('Error opening database:', e)
 
-  log('Opening database...')
-  const db2 = await orbitdb2.open(peer1DbAddress)
+    // connect to voyager
+    const voyagerAddress = process.env.VOYAGER_ADDRESS
+    if (!voyagerAddress) {
+      log.error('Error: VOYAGER_ADDRESS environment variable not set.')
+    } else {
+      log('Dialing voyager multiaddr: %s', voyagerAddress)
+      ipfs2.libp2p.dial(multiaddr(voyagerAddress))
+    }
+    log('Retrying to open database...')
+    return orbitdb2.open(peer1DbAddress)
+  })
+
+  if (!db2) {
+    log.error('Failed to open database')
+    log.error('Please make sure peer1 is running or the voyager storage service is available.')
+    process.exit(1)
+  }
 
   let db2Updated = false
   db2.events.on('update', async (entry) => {
