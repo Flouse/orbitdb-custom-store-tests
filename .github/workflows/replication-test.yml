@@ -53,4 +53,4 @@ jobs:
     - name: Start Peer 2
       env:
         VOYAGER_ADDRESS: ${{ steps.voyager-address.outputs.address }}
-      run: DEBUG=* node src/peer2.js
+      run: DEBUG=peer2 node src/peer2.js

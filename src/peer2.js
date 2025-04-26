@@ -19,26 +19,44 @@ const run = async () => {
   const orbitdb2 = await createOrbitDB({ ipfs: ipfs2, id: 'peer2', directory })
 
   log('Opening OrbitDB...')
-  const db2 = await orbitdb2.open(peer1DbAddress).catch((e) => {
+  const db2 = await orbitdb2.open(peer1DbAddress).catch(async (e) => {
     log.error('Error opening database:', e)
 
-    // connect to voyager
+    const libp2p = ipfs2.libp2p
+
+    // only connect to voyager if necessary
     const voyagerAddress = process.env.VOYAGER_ADDRESS
     if (!voyagerAddress) {
       log.error('Error: VOYAGER_ADDRESS environment variable not set.')
-    } else {
-      log('Dialing voyager multiaddr: %s', voyagerAddress)
-      ipfs2.libp2p.dial(multiaddr(voyagerAddress))
+      return undefined
     }
-    log('Retrying to open database...')
+    const voyagerMultiaddr = multiaddr(voyagerAddress)
+
+    log('Dialing voyager multiaddr: %s', voyagerAddress)
+    const connection = await libp2p.dial(voyagerMultiaddr).catch((e) => {
+      log.error('Error dialing voyager:', e)
+      throw new Error('Voyager connection Failed')
+    })
+    log('Connected to voyager:', connection)
+
+    log('Connected to voyager, retrying to open database...')
     return orbitdb2.open(peer1DbAddress)
-  })
+
+  }).finally(() => {
+    log('Finished Opening OrbitDB');
+  });
+
+  // log all libp2p connections
+  const connections = ipfs2.libp2p.getConnections()
+  log('Libp2p connections:', connections.map((c) => c.remotePeer.toString()))
 
   if (!db2) {
     log.error('Failed to open database')
     log.error('Please make sure peer1 is running or the voyager storage service is available.')
     process.exit(1)
   }
+
+  log('Database opened:', db2.address.toString())
 
   let db2Updated = false
   db2.events.on('update', async (entry) => {
@@ -61,7 +79,7 @@ const run = async () => {
     }, 1000)
   })
 
-  // Print out the above records.
+  // Print out all records
   log('Retrieving all records from Peer2...')
   const allRecords = await db2.all()
   log('All records:', allRecords)

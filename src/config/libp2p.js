@@ -121,16 +121,17 @@ export const initIPFSInstance = async (dir, peerId) => {
   const libp2pConfig = { ...Libp2pOptions, peerId }
   const libp2p = await createLibp2p(libp2pConfig)
 
+  // Used to debug connections
   // https://github.com/libp2p/js-libp2p/blob/main/doc/PEER_DISCOVERY.md
-  libp2p.addEventListener('peer:discovery', (evt) => {
-    console.log('Discovered %s', evt.detail.id.toString()) // Log discovered peer
-  })
-  libp2p.addEventListener('peer:connect', (evt) => {
-    console.log('Connected to %s', evt.detail.toString()) // Log connected peer
-  })
-  libp2p.addEventListener('peer:disconnect', (evt) => {
-    console.log('Disconnected from %s', evt.detail.toString()) // Log disconnected peer
-  })
+  // libp2p.addEventListener('peer:discovery', (evt) => {
+  //   console.log('Discovered %s', evt.detail.id.toString()) // Log discovered peer
+  // })
+  // libp2p.addEventListener('peer:connect', (evt) => {
+  //   console.log('Connected to %s', evt.detail.toString()) // Log connected peer
+  // })
+  // libp2p.addEventListener('peer:disconnect', (evt) => {
+  //   console.log('Disconnected from %s', evt.detail.toString()) // Log disconnected peer
+  // })
 
   return createHelia({ libp2p, blockstore })
 }
