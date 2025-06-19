@@ -15,7 +15,7 @@ const run = async () => {
   log('Read peer1 db address from %s: %s', PEER1_DB_ADDRESS_FILE, peer1DbAddress)
 
   const ipfs2 = await initIPFSInstance('./data/ipfs12')
-  const directory = `./data/orbitdb-${Date.now()}`
+  const directory = `./data/orbitdb-${peer1DbAddress.slice(-8)}`
   const orbitdb2 = await createOrbitDB({ ipfs: ipfs2, id: 'peer2', directory })
 
   log('Opening OrbitDB...')
@@ -64,28 +64,41 @@ const run = async () => {
     log('Database updated', entry)
   })
 
+  let checkInterval = undefined
+
   // Wait for the database to update, with a timeout
   await new Promise((resolve, reject) => {
-    const timeout = setTimeout(() => {
+    const timeout = setTimeout(async () => {
       reject(new Error('timeout'))
-    }, 60000)
+    }, 20000)
 
-    const checkInterval = setInterval(() => {
+    checkInterval = setInterval(() => {
       if (db2Updated) {
         clearTimeout(timeout)
         clearInterval(checkInterval)
+        log('Replication successful!')
         resolve()
       }
     }, 1000)
+  }).catch((e) => {
+    log.error('Error during replication:', e)
+    if (e.message === 'timeout') {
+      log.error('Replication timed out. Please ensure peer1 or voyager is running and reachable.')
+    }
+  }).finally(async () => {
+    clearInterval(checkInterval)
+    log('Stopping update check...')
+
+    // Print out all records
+    log('Retrieving all records from Peer2...')
+    const allRecords = await db2.all()
+    log('All records:', allRecords)
+
+    log('Peer 2 is shutting down gracefully...')
+    await db2.close()
+    await orbitdb2.stop()
+    await ipfs2.stop()
   })
-
-  // Print out all records
-  log('Retrieving all records from Peer2...')
-  const allRecords = await db2.all()
-  log('All records:', allRecords)
-
-  log('Replication successful!')
-  process.exit(0)
 }
 
 run().catch((e) => {
