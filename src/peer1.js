@@ -58,7 +58,7 @@ const run = async () => {
     await ipfs1.stop()
     log('Done.')
     process.exit(0)
-  }, 10000)
+  }, 30000)
 }
 
 run().catch((e) => {

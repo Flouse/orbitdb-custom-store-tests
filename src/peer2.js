@@ -20,7 +20,7 @@ const run = async () => {
 
   log('Opening OrbitDB...')
   const db2 = await orbitdb2.open(peer1DbAddress).catch(async (e) => {
-    log.error('Error opening database:', e)
+    log('Error opening database:', e)
 
     const libp2p = ipfs2.libp2p
 
@@ -34,7 +34,7 @@ const run = async () => {
 
     log('Dialing voyager multiaddr: %s', voyagerAddress)
     const connection = await libp2p.dial(voyagerMultiaddr).catch((e) => {
-      log.error('Error dialing voyager:', e)
+      log('Error dialing voyager:', e)
       throw new Error('Voyager connection Failed')
     })
     log('Connected to voyager:', connection)

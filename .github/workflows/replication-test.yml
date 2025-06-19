@@ -48,9 +48,9 @@ jobs:
 
     - name: Start Peer 1
       env:
-        VOYAGER_ADDRESS: ${{ steps.voyager-address.outputs.address }}
+        VOYAGER_ADDRESS: ${{ vars.VOYAGER_ADDRESS }}
       run: DEBUG=* node src/peer1.js
     - name: Start Peer 2
       env:
-        VOYAGER_ADDRESS: ${{ steps.voyager-address.outputs.address }}
+        VOYAGER_ADDRESS: ${{ vars.VOYAGER_ADDRESS }}
       run: DEBUG=peer2 node src/peer2.js
