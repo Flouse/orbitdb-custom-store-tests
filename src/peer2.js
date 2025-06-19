@@ -46,16 +46,11 @@ const run = async () => {
     log('Finished Opening OrbitDB');
   });
 
-  // log all libp2p connections
-  const connections = ipfs2.libp2p.getConnections()
-  log('Libp2p connections:', connections.map((c) => c.remotePeer.toString()))
-
   if (!db2) {
     log.error('Failed to open database')
     log.error('Please make sure peer1 is running or the voyager storage service is available.')
     process.exit(1)
   }
-
   log('Database opened:', db2.address.toString())
 
   let db2Updated = false
@@ -64,8 +59,11 @@ const run = async () => {
     log('Database updated', entry)
   })
 
-  let checkInterval = undefined
+  // log all libp2p connections
+  const connections = ipfs2.libp2p.getConnections()
+  log('Libp2p connections:', connections.map((c) => c.remotePeer.toString()))
 
+  let checkInterval = undefined
   // Wait for the database to update, with a timeout
   await new Promise((resolve, reject) => {
     const timeout = setTimeout(async () => {
