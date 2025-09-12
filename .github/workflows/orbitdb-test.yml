@@ -8,6 +8,11 @@ on:
         description: 'Run the build with tmate debugging enabled (https://github.com/marketplace/actions/debugging-with-tmate)'
         required: false
         default: false
+      input_cid:
+        type: string
+        description: 'Optional CID to retrieve using ipfs get'
+        required: false
+        default: ''
   # TODO: run every 6 hours
   # schedule:
   # - cron: '0 */6 * * *'
@@ -45,16 +50,19 @@ jobs:
         # ipfs cat ${{ steps.ipfs_setup.outputs.welcome_ref }}/readme
         curl -sX POST http://localhost:5001/api/v0/version | jq -e .
         curl -sX POST http://localhost:5001/api/v0/version | jq -e '(.Version=="${{ steps.ipfs_setup.outputs.resolved_ipfs_version }}")'
-    
-    - name: Test IPFS file retrieval with 'ipfs get'
+
+    - name: Get input CID with 'ipfs get' (if provided)
+      # Only run if triggered manually AND the input_cid is not empty
+      if: github.event_name == 'workflow_dispatch' && inputs.input_cid != ''
       shell: bash
-      run: ipfs get bafybeifaimvnz2fi5duvcetbrqaj3ftt4lgt3rnnv56npt6svlh3czbewa
-    
+      run: |
+        echo "Attempting to get CID: ${{ inputs.input_cid }}"
+        ipfs get --progress ${{ inputs.input_cid }}
+        echo "Successfully retrieved CID: ${{ inputs.input_cid }}"
+
     # Enable tmate debugging of manually-triggered workflows if the input option was provided
     - name: Setup tmate session
-      # TODO: uncomment this `if` condition when merging into the default branch
-      # if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
-      #
+      if: ${{ github.event_name == 'workflow_dispatch' && inputs.debug_enabled }}
       # https://github.com/mxschmitt/action-tmate/releases/tag/v3.19
       uses: mxschmitt/action-tmate@e5c7151931ca95bad1c6f4190c730ecf8c7dde48
       with:
@@ -64,36 +72,34 @@ jobs:
       run: sleep 3600
       shell: bash
 
+  # test:
+  #   runs-on: ubuntu-latest
+  #   steps:
+  #     - uses: actions/checkout@v4
 
-  test:
-    runs-on: ubuntu-latest
+  #     - name: Setup Node.js
+  #       uses: actions/setup-node@v4
+  #       with:
+  #         node-version: 'lts/*'
+  #     - run: npm ci
 
-    steps:
-      - uses: actions/checkout@v4
+  #     # - name: Cache OrbitDB data
+  #     #   uses: actions/cache/restore@v4
+  #     #   id: orbitdb-cache
+  #     #   with:
+  #     #     path: |
+  #     #       ./data/ipfs-composed-test
+  #     #       ./data/orbitdb-composed
+  #     #     key: orbitdb-data-cache
 
-      - name: Setup Node.js
-        uses: actions/setup-node@v4
-        with:
-          node-version: 'lts/*'
-      - run: npm ci
+  #     - name: Run test
+  #       run: node src/composed-storage-test.js
 
-      # - name: Cache OrbitDB data
-      #   uses: actions/cache/restore@v4
-      #   id: orbitdb-cache
-      #   with:
-      #     path: |
-      #       ./data/ipfs-composed-test
-      #       ./data/orbitdb-composed
-      #     key: orbitdb-data-cache
-
-      - name: Run test
-        run: node src/composed-storage-test.js
-
-      # - name: Save OrbitDB data (always)
-      #   if: always()
-      #   uses: actions/cache/save@v4
-      #   with:
-      #     path: |
-      #       ./data/ipfs-composed-test
-      #       ./data/orbitdb-composed
-      #     key: orbitdb-data-cache
+  #     # - name: Save OrbitDB data (always)
+  #     #   if: always()
+  #     #   uses: actions/cache/save@v4
+  #     #   with:
+  #     #     path: |
+  #     #       ./data/ipfs-composed-test
+  #     #       ./data/orbitdb-composed
+  #     #     key: orbitdb-data-cache
